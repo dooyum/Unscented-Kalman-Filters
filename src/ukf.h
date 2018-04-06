@@ -2,6 +2,7 @@
 #define UKF_H
 
 #include "measurement_package.h"
+#include "tools.h"
 #include "Eigen/Dense"
 #include <vector>
 #include <string>
@@ -31,8 +32,20 @@ public:
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
 
+  ///* mean predicted measurement
+  VectorXd z_pred_;
+
+  ///* matrix for sigma points in predicted measurement space
+  MatrixXd Zsig_pred_;
+
+  ///* matrix for predicted measurement covariance
+  MatrixXd S_;
+
   ///* time when the state is true, in us
   long long time_us_;
+  
+  // previous timestamp
+  long long previous_timestamp_;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
@@ -61,11 +74,16 @@ public:
   ///* State dimension
   int n_x_;
 
+  ///* Polar measurement dimension.
+  int n_z_;
+
   ///* Augmented state dimension
   int n_aug_;
 
   ///* Sigma point spreading parameter
   double lambda_;
+  
+  Tools tools;
 
 
   /**
@@ -90,6 +108,17 @@ public:
    * @param delta_t Time between k and k+1 in s
    */
   void Prediction(double delta_t);
+  
+  MatrixXd GenerateSigmaPoints();
+  
+  MatrixXd AugmentSigmaPoints();
+  
+  void PredictMeanAndCovariance();
+
+  void PredictMeasurement(bool is_radar);
+
+  void UpdateState(VectorXd z, bool is_radar);
+
 
   /**
    * Updates the state and the state covariance matrix using a laser measurement
