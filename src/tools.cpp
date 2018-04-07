@@ -43,7 +43,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   return rmse;
 }
 
-VectorXd Tools::PolarToCartesian(const VectorXd &x, int size) {
+VectorXd Tools::PolarToCartesian(VectorXd x, int size) {
   float rho = x(0);
   float phi = x(1);
   float rho_dot = x(2);
@@ -53,26 +53,28 @@ VectorXd Tools::PolarToCartesian(const VectorXd &x, int size) {
   float vy = rho_dot * sin(phi);
   float v  = sqrt(vx * vx + vy * vy);
 
-  VectorXd cartesian(size);
-  cartesian.fill(0);
+  VectorXd cartesian = VectorXd::Zero(size);
   cartesian(0) = px;
   cartesian(1) = py;
   cartesian(2) = v;
 
-  return NormalizeRadians(cartesian, size);
+  return cartesian;
 }
 
-VectorXd Tools::NormalizeRadians(const VectorXd &x, int size) {
-  float phi = x(1);
+VectorXd Tools::NormalizeRadians(VectorXd x, int radIndex) {
+
+  float rad = x(radIndex);
   
-  while (phi > M_PI) phi -= 2 * M_PI;
-  
-  while (phi < -M_PI) phi += 2 * M_PI;
-  
-  VectorXd normalizedPolar(size);
-  normalizedPolar.fill(0);
-  normalizedPolar(0) = x(0);
-  normalizedPolar(1) = phi;
-  normalizedPolar(2) = x(2);
+  while (rad < -M_PI) rad += 2 * M_PI;
+  while (rad > M_PI) rad -= 2 * M_PI;
+
+  VectorXd normalizedPolar = VectorXd::Zero(x.size());
+  normalizedPolar << x;
+  normalizedPolar(radIndex) = rad;
+//  if (x(radIndex) != normalizedPolar(radIndex)) {
+//    cout << "===================" << endl;
+//    cout << "x: " << x(radIndex) << endl;
+//    cout << "normalizedPolar: " << normalizedPolar(radIndex) << endl;
+//  }
   return normalizedPolar;
 }

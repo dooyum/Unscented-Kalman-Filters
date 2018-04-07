@@ -68,8 +68,20 @@ public:
   ///* Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
+  double alpha_;
+
+  double beta_;
+
+  double weight_initial_;
+
   ///* Weights of sigma points
   VectorXd weights_;
+
+  ///* Weights for predicting Mean sigma points
+  VectorXd weights_m_;
+
+  ///* Weights for predicting Covariance sigma points
+  VectorXd weights_c_;
 
   ///* State dimension
   int n_x_;
@@ -107,13 +119,13 @@ public:
    * matrix
    * @param delta_t Time between k and k+1 in s
    */
-  void Prediction(double delta_t);
+  void Prediction(double delta_t, bool is_radar);
   
   MatrixXd GenerateSigmaPoints();
   
   MatrixXd AugmentSigmaPoints();
   
-  void PredictMeanAndCovariance();
+  void PredictMeanAndCovariance(bool is_radar);
 
   void PredictMeasurement(bool is_radar);
 

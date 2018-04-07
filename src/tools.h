@@ -25,22 +25,16 @@ public:
   VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
   
   /**
-   * Converts cartesian coordinates to polar coordinates.
-   * @param x cartesian coordinates
-   */
-  VectorXd CartesianToPolar(const VectorXd &x, int size);
-  
-  /**
    * Converts polar coordinates to cartesian coordinates.
    * @param x polar coordinates
    */
-  VectorXd PolarToCartesian(const VectorXd &x, int size);
+  VectorXd PolarToCartesian(VectorXd x, int size);
   
   /**
    * Normalizes the phi value of polar coordinates to be between pi and -pi.
    * @param x polar coordinates
    */
-  VectorXd NormalizeRadians(const VectorXd &x, int size);
+  VectorXd NormalizeRadians(VectorXd x, int radIndex);
 };
 
 #endif /* TOOLS_H_ */
