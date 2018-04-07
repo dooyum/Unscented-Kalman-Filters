@@ -38,7 +38,6 @@ UKF::UKF() {
   P_ = MatrixXd::Zero(n_x_, n_x_);
 
   // initialize weights
-//  weights_ = VectorXd::Zero(2 * n_aug_ + 1);
   weights_m_ = VectorXd::Zero(2 * n_aug_ + 1);
   weights_c_ = VectorXd::Zero(2 * n_aug_ + 1);
 
@@ -115,7 +114,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     is_initialized_ = true;
     return;
   }
-  float delta_t = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;
+  float delta_t = (meas_package.timestamp_ - previous_timestamp_) / 1e6;
   previous_timestamp_ = meas_package.timestamp_;
   bool is_radar = meas_package.sensor_type_ == MeasurementPackage::RADAR;
   while (delta_t > 0.1)
@@ -159,7 +158,8 @@ void UKF::Prediction(double delta_t, bool is_radar) {
     double nu_yawdd = Xsig_aug(6,i);
     
     //predicted state values
-    double px_p, py_p;
+    double px_p = 0;
+    double py_p = 0;
     
     //avoid division by zero
     if (fabs(yawd) > 0.001) {
@@ -176,11 +176,11 @@ void UKF::Prediction(double delta_t, bool is_radar) {
     double yawd_p = yawd;
     
     //add noise
-    px_p = px_p + 0.5 * nu_a * delta_t * delta_t * cos(yaw);
-    py_p = py_p + 0.5 * nu_a * delta_t * delta_t * sin(yaw);
-    v_p = v_p + nu_a * delta_t;
-    yaw_p = yaw_p + 0.5 * nu_yawdd * delta_t * delta_t;
-    yawd_p = yawd_p + nu_yawdd * delta_t;
+    px_p += 0.5 * nu_a * delta_t * delta_t * cos(yaw);
+    py_p += 0.5 * nu_a * delta_t * delta_t * sin(yaw);
+    v_p += nu_a * delta_t;
+    yaw_p += 0.5 * nu_yawdd * delta_t * delta_t;
+    yawd_p += nu_yawdd * delta_t;
     
     // write predicted sigma points
     Xsig_pred_(0,i) = px_p;
@@ -209,7 +209,7 @@ MatrixXd UKF::AugmentSigmaPoints() {
   x_aug(6) = 0;
   
   //create augmented covariance matrix
-  P_aug.topLeftCorner(5,5) = P_;
+  P_aug.topLeftCorner(n_x_,n_x_) = P_;
   P_aug(5,5) = std_a_ * std_a_;
   P_aug(6,6) = std_yawdd_ * std_yawdd_;
   
@@ -238,7 +238,7 @@ void UKF::PredictMeanAndCovariance(bool is_radar) {
 
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x;
-    if (is_radar) x_diff = tools.NormalizeRadians(x_diff, 3);
+//    if (is_radar) x_diff = tools.NormalizeRadians(x_diff, 3);
     P = P + weights_c_(i) * x_diff * x_diff.transpose();
   }
   x_ = x;

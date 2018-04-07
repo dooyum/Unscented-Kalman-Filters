@@ -71,10 +71,5 @@ VectorXd Tools::NormalizeRadians(VectorXd x, int radIndex) {
   VectorXd normalizedPolar = VectorXd::Zero(x.size());
   normalizedPolar << x;
   normalizedPolar(radIndex) = rad;
-//  if (x(radIndex) != normalizedPolar(radIndex)) {
-//    cout << "===================" << endl;
-//    cout << "x: " << x(radIndex) << endl;
-//    cout << "normalizedPolar: " << normalizedPolar(radIndex) << endl;
-//  }
   return normalizedPolar;
 }
