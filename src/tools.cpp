@@ -44,14 +44,14 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 }
 
 VectorXd Tools::PolarToCartesian(VectorXd x, int size) {
-  float rho = x(0);
-  float phi = x(1);
-  float rho_dot = x(2);
-  float px = rho * cos(phi);
-  float py = rho * sin(phi);
-  float vx = rho_dot * cos(phi);
-  float vy = rho_dot * sin(phi);
-  float v  = sqrt(vx * vx + vy * vy);
+  float const rho = x(0);
+  float const phi = x(1);
+  float const rho_dot = x(2);
+  float const px = rho * cos(phi);
+  float const py = rho * sin(phi);
+  float const vx = rho_dot * cos(phi);
+  float const vy = rho_dot * sin(phi);
+  float const v  = sqrt(vx * vx + vy * vy);
 
   VectorXd cartesian = VectorXd::Zero(size);
   cartesian(0) = px;

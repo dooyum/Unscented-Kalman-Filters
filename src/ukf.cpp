@@ -102,8 +102,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     }
 
     // set weights
-    double weight_m_0 = lambda_ / (lambda_ + n_aug_);
-    double weight_c_0 = lambda_ / (lambda_ + n_aug_) + (1 - alpha_ * alpha_ + beta_);
+    double const weight_m_0 = lambda_ / (lambda_ + n_aug_);
+    double const weight_c_0 = lambda_ / (lambda_ + n_aug_) + (1 - alpha_ * alpha_ + beta_);
     weights_m_.fill(weight_initial_);
     weights_c_.fill(weight_initial_);
     weights_m_(0) = weight_m_0;
@@ -114,15 +114,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     is_initialized_ = true;
     return;
   }
-  float delta_t = (meas_package.timestamp_ - previous_timestamp_) / 1e6;
+  float const delta_t = (meas_package.timestamp_ - previous_timestamp_) / 1e6;
   previous_timestamp_ = meas_package.timestamp_;
-  bool is_radar = meas_package.sensor_type_ == MeasurementPackage::RADAR;
-  while (delta_t > 0.1)
-  {
-    const double dt = 0.05;
-    Prediction(dt, is_radar);
-    delta_t -= dt;
-  }
+  bool const is_radar = meas_package.sensor_type_ == MeasurementPackage::RADAR;
   Prediction(delta_t, is_radar);
   if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
     UpdateLidar(meas_package);
@@ -149,13 +143,13 @@ void UKF::Prediction(double delta_t, bool is_radar) {
   for (int i = 0; i< 2 * n_aug_ + 1; i++)
   {
     //extract values for better readability
-    double p_x = Xsig_aug(0,i);
-    double p_y = Xsig_aug(1,i);
-    double v = Xsig_aug(2,i);
-    double yaw = Xsig_aug(3,i);
-    double yawd = Xsig_aug(4,i);
-    double nu_a = Xsig_aug(5,i);
-    double nu_yawdd = Xsig_aug(6,i);
+    double const p_x = Xsig_aug(0,i);
+    double const p_y = Xsig_aug(1,i);
+    double const v = Xsig_aug(2,i);
+    double const yaw = Xsig_aug(3,i);
+    double const yawd = Xsig_aug(4,i);
+    double const nu_a = Xsig_aug(5,i);
+    double const nu_yawdd = Xsig_aug(6,i);
     
     //predicted state values
     double px_p = 0;
@@ -247,7 +241,7 @@ void UKF::PredictMeanAndCovariance(bool is_radar) {
 
 
 void UKF::UpdateState(VectorXd z, bool is_radar) {
-  int n_z = is_radar ? 3 : 2;
+  int const n_z = is_radar ? 3 : 2;
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd::Zero(n_x_, n_z);
@@ -304,7 +298,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    */
   PredictMeasurement(true);
   VectorXd z = VectorXd::Zero(3);
-  z = tools.PolarToCartesian(meas_package.raw_measurements_, 3);
+  z << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], meas_package.raw_measurements_[2];
   UpdateState(z, true);
 }
 
@@ -313,7 +307,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
  */
 void UKF::PredictMeasurement(bool is_radar) {
   //set measurement dimension, radar can measure rho, phi, and rho_dot
-  int n_z = is_radar ? 3 : 2;
+  int const n_z = is_radar ? 3 : 2;
 
   //create matrix for sigma points in predicted measurement space
   Zsig_pred_ = MatrixXd::Zero(n_z, 2 * n_aug_ + 1);
@@ -321,12 +315,12 @@ void UKF::PredictMeasurement(bool is_radar) {
   //transform sigma points into measurement space
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
 
-    double p_x = Xsig_pred_(0,i);
-    double p_y = Xsig_pred_(1,i);
-    double v  = Xsig_pred_(2,i);
-    double yaw = Xsig_pred_(3,i);
-    double v1 = cos(yaw) * v;
-    double v2 = sin(yaw) * v;
+    double const p_x = Xsig_pred_(0,i);
+    double const p_y = Xsig_pred_(1,i);
+    double const v  = Xsig_pred_(2,i);
+    double const yaw = Xsig_pred_(3,i);
+    double const v1 = cos(yaw) * v;
+    double const v2 = sin(yaw) * v;
 
     if (is_radar){
       Zsig_pred_(0,i) = sqrt(p_x * p_x + p_y * p_y); //rho
