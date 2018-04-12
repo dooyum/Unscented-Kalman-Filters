@@ -108,6 +108,8 @@ public:
    */
   virtual ~UKF();
 
+  void InitValues(const MeasurementPackage meas_package);
+
   /**
    * ProcessMeasurement
    * @param meas_package The latest measurement data of either radar or laser

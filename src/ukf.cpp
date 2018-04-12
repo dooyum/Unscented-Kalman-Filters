@@ -8,11 +8,14 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
+double const EPS = 0.001;
+
 /**
  * Initializes Unscented Kalman filter
  * This is scaffolding, do not modify
  */
 UKF::UKF() {
+
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = true;
 
@@ -45,7 +48,7 @@ UKF::UKF() {
   Xsig_pred_ = MatrixXd::Zero(n_x_, 2 * n_aug_ + 1);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3.0;
+  std_a_ = 1.2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 0.3;
@@ -70,49 +73,52 @@ UKF::UKF() {
 
 UKF::~UKF() {}
 
+void UKF::InitValues(const MeasurementPackage meas_package) {
+  P_ << 2,0,0,0,0,
+  0,4,0,0,0,
+  0,0,1,0,0,
+  0,0,0,0.5,0,
+  0,0,0,0,0.5;
+
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    /**
+     Convert radar from polar to cartesian coordinates and initialize state.
+     */
+    x_ = tools.PolarToCartesian(meas_package.raw_measurements_, n_x_);
+  }
+  else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+    /**
+     Initialize state.
+     */
+    x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
+
+    if (fabs(x_(0)) < EPS and fabs(x_(1)) < EPS){
+      x_(0) = 0;
+      x_(1) = 0;
+    }
+  }
+
+  // set weights
+  double const weight_m_0 = lambda_ / (lambda_ + n_aug_);
+  double const weight_c_0 = lambda_ / (lambda_ + n_aug_) + (1 - alpha_ * alpha_ + beta_);
+  weights_m_.fill(weight_initial_);
+  weights_c_.fill(weight_initial_);
+  weights_m_(0) = weight_m_0;
+  weights_c_(0) = weight_c_0;
+
+  previous_timestamp_ = meas_package.timestamp_;
+  // done initializing, no need to predict or update
+  is_initialized_ = true;
+  return;
+}
+
 /**
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-
   if (!is_initialized_) {
-    P_ << 2,0,0,0,0,
-          0,4,0,0,0,
-          0,0,1,0,0,
-          0,0,0,0.5,0,
-          0,0,0,0,0.5;
-
-    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
-      /**
-       Convert radar from polar to cartesian coordinates and initialize state.
-       */
-      x_ = tools.PolarToCartesian(meas_package.raw_measurements_, n_x_);
-    }
-    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
-      /**
-       Initialize state.
-       */
-      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
-
-      if (fabs(x_(0)) < 0.001 and fabs(x_(1)) < 0.001){
-        x_(0) = 0;
-        x_(1) = 0;
-      }
-    }
-
-    // set weights
-    double const weight_m_0 = lambda_ / (lambda_ + n_aug_);
-    double const weight_c_0 = lambda_ / (lambda_ + n_aug_) + (1 - alpha_ * alpha_ + beta_);
-    weights_m_.fill(weight_initial_);
-    weights_c_.fill(weight_initial_);
-    weights_m_(0) = weight_m_0;
-    weights_c_(0) = weight_c_0;
-    
-    previous_timestamp_ = meas_package.timestamp_;
-    // done initializing, no need to predict or update
-    is_initialized_ = true;
-    return;
+    InitValues(meas_package);
   }
   float const delta_t = (meas_package.timestamp_ - previous_timestamp_) / 1e6;
   previous_timestamp_ = meas_package.timestamp_;
@@ -156,7 +162,7 @@ void UKF::Prediction(double delta_t, bool is_radar) {
     double py_p = 0;
     
     //avoid division by zero
-    if (fabs(yawd) > 0.001) {
+    if (fabs(yawd) > EPS) {
       px_p = p_x + v/yawd * ( sin (yaw + yawd * delta_t) - sin(yaw));
       py_p = p_y + v/yawd * ( cos(yaw) - cos(yaw + yawd * delta_t));
     }
@@ -324,8 +330,13 @@ void UKF::PredictMeasurement(bool is_radar) {
 
     if (is_radar){
       Zsig_pred_(0,i) = sqrt(p_x * p_x + p_y * p_y); //rho
-      Zsig_pred_(1,i) = atan2(p_y, p_x); //phi
-      Zsig_pred_(2,i) = (p_x * v1 + p_y * v2 ) / sqrt(p_x * p_x + p_y * p_y); //rho_dot
+      // Avoid undefined atan.
+      if (fabs(p_y) < EPS and fabs(p_x) < EPS) {
+        Zsig_pred_(1,i) = 0; //phi
+      } else {
+        Zsig_pred_(1,i) = atan2(p_y, p_x); //phi
+      }
+      Zsig_pred_(2,i) = (p_x * v1 + p_y * v2 ) / std::max(EPS, sqrt(p_x * p_x + p_y * p_y)); //rho_dot
     } else {
       Zsig_pred_(0,i) = p_x;
       Zsig_pred_(1,i) = p_y;
